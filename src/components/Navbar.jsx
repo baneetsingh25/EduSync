@@ -138,13 +138,23 @@ export default function Navbar({ activeClassId, setActiveClassId }) {
 
       {/* Gemini Settings Modal */}
       {showAIModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="font-headline text-lg font-bold text-chocolate mb-2 flex items-center gap-2">
+        <div className="fixed inset-0 bg-[#453724]/40 backdrop-blur-sm z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FAF9F5] border-2 border-[#453724] rounded-2xl p-6 w-full max-w-md shadow-[6px_6px_0px_0px_#453724] animate-in fade-in zoom-in-95 duration-200 relative my-4 md:my-auto">
+            
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowAIModal(false)}
+              className="absolute top-4 right-4 text-[#453724] hover:bg-[#453724]/10 p-1.5 rounded-full transition-colors flex items-center justify-center"
+              title="Close Dialog"
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+
+            <h3 className="font-headline text-lg font-bold text-chocolate mb-2 flex items-center gap-2 pr-8">
               <span className="material-symbols-outlined text-rust">smart_toy</span>
-              Configure Google Gemini Assistant
+              Configure Gemini Assistant
             </h3>
-            <p className="text-xs text-on-surface-variant mb-4 leading-relaxed">
+            <p className="text-xs text-on-surface-variant mb-4 leading-relaxed font-medium">
               Save your Gemini API Key locally to unlock AI features (AI Assignment draft generator, AI grading suggestions, and student study companions).
             </p>
             
@@ -160,11 +170,11 @@ export default function Navbar({ activeClassId, setActiveClassId }) {
                   value={tempKey}
                   onChange={(e) => setTempKey(e.target.value)}
                   placeholder="AIzaSy..."
-                  className="w-full px-3 py-2 bg-white border border-outline/35 rounded-lg text-sm input-focus-ring"
+                  className="w-full px-3 py-2 bg-white border border-[#453724] rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
                 />
               </div>
 
-              <div className="text-[10px] text-outline font-semibold leading-relaxed border-t border-outline-variant/30 pt-3">
+              <div className="text-[10px] text-outline font-semibold leading-relaxed border-t border-[#453724]/10 pt-3">
                 Note: Your API Key is saved directly in your browser's local storage and is only used to query the Gemini client locally. It is never uploaded to any server.
               </div>
 
@@ -172,13 +182,13 @@ export default function Navbar({ activeClassId, setActiveClassId }) {
                 <button 
                   type="button" 
                   onClick={() => setShowAIModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-container rounded-lg"
+                  className="px-4 py-2 text-xs font-bold text-chocolate hover:bg-[#453724]/5 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold bg-rust hover:bg-primary text-white rounded-lg shadow-sm"
+                  className="px-5 py-2.5 bg-rust border-2 border-[#453724] text-white hover:bg-primary rounded-xl font-bold text-xs shadow-sm transition-colors active:scale-95 flex items-center gap-1"
                 >
                   Save API Key
                 </button>
