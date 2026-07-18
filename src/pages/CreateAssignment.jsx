@@ -1,9 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { useNavigate, Navigate } from 'react-router-dom';
+import { generateAssignmentPrompt, isAIConfigured } from '../services/aiService';
 
 export default function CreateAssignment() {
-  const { classes, addAssignment, currentUser } = useContext(AppContext);
+  const { classes, addAssignment, currentUser, geminiKey } = useContext(AppContext);
   const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
@@ -14,9 +15,36 @@ export default function CreateAssignment() {
   const [publishing, setPublishing] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
+  // AI Assist States
+  const [showAIInput, setShowAIInput] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [generatingAI, setGeneratingAI] = useState(false);
+
   // Auth Protection
   if (!currentUser) return <Navigate to="/login?role=teacher" replace />;
   if (currentUser.role !== 'teacher') return <Navigate to="/student" replace />;
+
+  const handleAIAssist = async () => {
+    if (!aiTopic.trim()) return;
+    if (!isAIConfigured(geminiKey)) {
+      alert("Please configure your Gemini API Key first by clicking the robot icon in the top navigation bar!");
+      return;
+    }
+
+    setGeneratingAI(true);
+    try {
+      const selectedClass = classes.find(c => c.id === classId);
+      const className = selectedClass ? selectedClass.name : "general study";
+      
+      const generatedInstructions = await generateAssignmentPrompt(aiTopic, className, geminiKey);
+      setDescription(generatedInstructions);
+      setShowAIInput(false);
+    } catch (err) {
+      alert("AI Generation failed: " + err.message);
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,14 +106,55 @@ export default function CreateAssignment() {
           </div>
 
           {/* Description */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-on-surface-variant" htmlFor="description">Description / Instructions</label>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-on-surface-variant" htmlFor="description">Description / Instructions</label>
+              <button
+                type="button"
+                onClick={() => setShowAIInput(!showAIInput)}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-rust hover:text-primary transition-colors py-0.5 px-2 bg-rust/5 rounded-md"
+              >
+                <span className="material-symbols-outlined text-xs">smart_toy</span>
+                {showAIInput ? 'Close AI Draft' : 'Draft with AI'}
+              </button>
+            </div>
+
+            {showAIInput && (
+              <div className="p-3 bg-surface-container border border-outline-variant/40 rounded-lg flex flex-col md:flex-row gap-2 items-center">
+                <input 
+                  type="text"
+                  placeholder="E.g., SQL Joins practice with sample tables and 3 questions..."
+                  value={aiTopic}
+                  onChange={(e) => setAiTopic(e.target.value)}
+                  className="flex-1 px-3 py-1.5 bg-white border border-outline/35 rounded-lg text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAIAssist(); } }}
+                />
+                <div className="flex gap-2 w-full md:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={handleAIAssist}
+                    disabled={generatingAI}
+                    className="px-3 py-1.5 bg-rust text-white text-xs font-bold rounded-lg hover:bg-primary transition-colors flex items-center gap-1"
+                  >
+                    {generatingAI ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <textarea 
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Detail the expectations, resources, and steps for completion..."
-              rows="4"
+              rows="6"
               className="w-full p-4 rounded-lg border border-outline-variant bg-white text-xs font-medium text-on-surface placeholder:text-outline/45 transition-all form-focus-ring resize-none"
             />
           </div>

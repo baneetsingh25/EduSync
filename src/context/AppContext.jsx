@@ -132,6 +132,12 @@ export const AppProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSupabase, setIsSupabase] = useState(isSupabaseConfigured);
+  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('edusync_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
+
+  const saveGeminiKey = (key) => {
+    localStorage.setItem('edusync_gemini_key', key);
+    setGeminiKey(key);
+  };
 
   // Load Initial Database State
   useEffect(() => {
@@ -435,7 +441,9 @@ export const AppProvider = ({ children }) => {
       addAssignment,
       submitAssignment,
       gradeSubmission,
-      resetLocalDatabase
+      resetLocalDatabase,
+      geminiKey,
+      saveGeminiKey
     }}>
       {children}
     </AppContext.Provider>

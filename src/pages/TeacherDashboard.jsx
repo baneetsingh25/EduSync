@@ -1,9 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { generateFeedbackSuggestion, isAIConfigured } from '../services/aiService';
 
 export default function TeacherDashboard({ activeClassId }) {
-  const { currentUser, assignments, submissions, gradeSubmission, classes, isSupabase } = useContext(AppContext);
+  const { currentUser, assignments, submissions, gradeSubmission, classes, isSupabase, geminiKey } = useContext(AppContext);
   const navigate = useNavigate();
   
   // Local state for grading inputs
@@ -11,11 +12,38 @@ export default function TeacherDashboard({ activeClassId }) {
   const [remarks, setRemarks] = useState({});
   const [savingId, setSavingId] = useState(null);
   const [savedId, setSavedId] = useState(null);
+  const [loadingAIId, setLoadingAIId] = useState(null);
   const [filterMode, setFilterMode] = useState('all'); // 'all', 'pending', 'graded'
 
   // Auth Protection
   if (!currentUser) return <Navigate to="/login?role=teacher" replace />;
   if (currentUser.role !== 'teacher') return <Navigate to="/student" replace />;
+
+  const handleAIFeedback = async (subId, studentName, fileName, isLate) => {
+    if (!isAIConfigured(geminiKey)) {
+      alert("Please configure your Gemini API Key first by clicking the robot icon in the top navigation bar!");
+      return;
+    }
+
+    setLoadingAIId(subId);
+    try {
+      const result = await generateFeedbackSuggestion(
+        studentName, 
+        activeAssignment ? activeAssignment.title : "Assignment",
+        activeAssignment ? activeAssignment.max_points : 100,
+        fileName, 
+        isLate, 
+        geminiKey
+      );
+      
+      setGrades(prev => ({ ...prev, [subId]: result.grade.toString() }));
+      setRemarks(prev => ({ ...prev, [subId]: result.feedback }));
+    } catch (err) {
+      alert("AI Grading suggestions failed: " + err.message);
+    } finally {
+      setLoadingAIId(null);
+    }
+  };
 
   const currentClass = classes.find(c => c.id === activeClassId);
 
@@ -219,14 +247,33 @@ export default function TeacherDashboard({ activeClassId }) {
                       </td>
 
                       {/* Remark Input */}
-                      <td className="px-6 py-4 w-full min-w-[200px]">
-                        <input 
-                          type="text"
-                          value={remarks[sub.id] || ''}
-                          onChange={(e) => handleRemarkChange(sub.id, e.target.value)}
-                          placeholder="Add feedback..."
-                          className="w-full px-3 py-1 border border-outline-variant rounded-lg text-xs font-medium focus:border-primary outline-none"
-                        />
+                      <td className="px-6 py-4 w-full min-w-[240px]">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="text"
+                            value={remarks[sub.id] || ''}
+                            onChange={(e) => handleRemarkChange(sub.id, e.target.value)}
+                            placeholder="Add feedback..."
+                            className="flex-1 px-3 py-1 border border-outline-variant rounded-lg text-xs font-medium focus:border-primary outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAIFeedback(sub.id, sub.student_name, sub.file_name, isLate)}
+                            disabled={loadingAIId === sub.id}
+                            className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+                              loadingAIId === sub.id 
+                                ? 'bg-surface-container text-outline' 
+                                : 'bg-rust/5 border-rust/10 text-rust hover:bg-rust/10'
+                            }`}
+                            title="Generate AI Feedback Suggestion"
+                          >
+                            {loadingAIId === sub.id ? (
+                              <span className="w-3.5 h-3.5 border-2 border-outline/30 border-t-outline rounded-full animate-spin"></span>
+                            ) : (
+                              <span className="material-symbols-outlined text-base">smart_toy</span>
+                            )}
+                          </button>
+                        </div>
                       </td>
 
                       {/* Action */}

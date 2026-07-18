@@ -1,16 +1,44 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Navigate } from 'react-router-dom';
+import { generateStudyTips, isAIConfigured } from '../services/aiService';
 
 export default function StudentDashboard() {
-  const { currentUser, assignments, submissions, submitAssignment, classes, loading } = useContext(AppContext);
+  const { currentUser, assignments, submissions, submitAssignment, classes, loading, geminiKey } = useContext(AppContext);
   const [uploadingForAssignId, setUploadingForAssignId] = useState(null);
   const [simulatedFileName, setSimulatedFileName] = useState('');
   const [showToast, setShowToast] = useState(false);
 
+  // AI Study Companion States
+  const [activeAIAssignment, setActiveAIAssignment] = useState(null);
+  const [aiTips, setAiTips] = useState('');
+  const [loadingTips, setLoadingTips] = useState(false);
+  const [showAICompanion, setShowAICompanion] = useState(false);
+
   // Auth Protection
   if (!currentUser) return <Navigate to="/login?role=student" replace />;
   if (currentUser.role !== 'student') return <Navigate to="/teacher" replace />;
+
+  const handleGetStudyTips = async (assign) => {
+    if (!isAIConfigured(geminiKey)) {
+      alert("Please configure your Gemini API Key first by clicking the robot icon in the top navigation bar!");
+      return;
+    }
+
+    setActiveAIAssignment(assign);
+    setShowAICompanion(true);
+    setLoadingTips(true);
+    setAiTips('');
+
+    try {
+      const tips = await generateStudyTips(assign.title, assign.description, geminiKey);
+      setAiTips(tips);
+    } catch (err) {
+      setAiTips("Failed to load study companion: " + err.message);
+    } finally {
+      setLoadingTips(false);
+    }
+  };
 
   // Helper: Get Class Code & Name by Class ID
   const getClassInfo = (classId) => {
@@ -142,13 +170,23 @@ export default function StudentDashboard() {
                   </div>
                 </div>
 
-                <button 
-                  onClick={() => setUploadingForAssignId(assign.id)}
-                  className="w-full mt-2 bg-primary-container hover:bg-[#c9751e]/15 text-primary hover:text-rust py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 border border-primary/20 transition-all"
-                >
-                  <span className="material-symbols-outlined text-sm">upload_file</span>
-                  Upload PDF/Image
-                </button>
+                <div className="flex gap-2 mt-2">
+                  <button 
+                    onClick={() => setUploadingForAssignId(assign.id)}
+                    className="flex-1 bg-primary-container hover:bg-[#c9751e]/15 text-primary hover:text-rust py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 border border-primary/20 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">upload_file</span>
+                    Submit Work
+                  </button>
+                  <button 
+                    onClick={() => handleGetStudyTips(assign)}
+                    className="px-3 bg-rust/5 hover:bg-rust/10 border border-rust/10 text-rust py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    title="Get AI study guidelines"
+                  >
+                    <span className="material-symbols-outlined text-sm">smart_toy</span>
+                    AI Help
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -246,6 +284,69 @@ export default function StudentDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* AI Study Companion Modal */}
+      {showAICompanion && activeAIAssignment && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col justify-between animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <div className="flex justify-between items-start mb-4 border-b border-outline-variant/30 pb-3">
+                <div>
+                  <h3 className="font-headline text-lg font-bold text-chocolate flex items-center gap-2">
+                    <span className="material-symbols-outlined text-rust">psychology</span>
+                    AI Study Companion
+                  </h3>
+                  <p className="text-xs text-outline font-bold uppercase mt-0.5 animate-pulse">
+                    For: {activeAIAssignment.title}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowAICompanion(false)}
+                  className="p-1 hover:bg-surface-container rounded-full text-on-surface-variant hover:text-chocolate transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+
+              {loadingTips ? (
+                <div className="py-16 flex flex-col items-center justify-center gap-3">
+                  <div className="w-8 h-8 border-4 border-rust/30 border-t-rust rounded-full animate-spin"></div>
+                  <p className="text-xs font-bold text-chocolate animate-pulse">Consulting AI Tutor...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-3 bg-surface-container-low rounded-lg border border-outline-variant/20">
+                    <h4 className="text-xs font-bold text-chocolate mb-1 uppercase tracking-wider">Assignment Goals</h4>
+                    <p className="text-xs text-on-surface-variant leading-relaxed">
+                      {activeAIAssignment.description}
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-[#FAF9F5] border border-outline-variant/40 rounded-xl">
+                    <h4 className="text-xs font-bold text-rust mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <span className="material-symbols-outlined text-sm">menu_book</span>
+                      Study Guide & Concept Outline
+                    </h4>
+                    <div className="text-xs text-on-surface leading-relaxed whitespace-pre-wrap font-medium">
+                      {aiTips}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-5 border-t border-outline-variant/30 mt-6">
+              <button 
+                type="button" 
+                onClick={() => setShowAICompanion(false)}
+                className="px-5 py-2.5 bg-rust hover:bg-primary text-white text-xs font-bold rounded-lg shadow-sm"
+              >
+                Got it, Thanks!
+              </button>
+            </div>
           </div>
         </div>
       )}

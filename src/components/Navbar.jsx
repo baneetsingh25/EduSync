@@ -3,13 +3,26 @@ import { AppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({ activeClassId, setActiveClassId }) {
-  const { currentUser, logout, isSupabase, classes } = useContext(AppContext);
+  const { currentUser, logout, isSupabase, classes, geminiKey, saveGeminiKey } = useContext(AppContext);
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [tempKey, setTempKey] = useState('');
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const openAIModal = () => {
+    setTempKey(geminiKey);
+    setShowAIModal(true);
+  };
+
+  const handleSaveKey = (e) => {
+    e.preventDefault();
+    saveGeminiKey(tempKey);
+    setShowAIModal(false);
   };
 
   const selectedClass = classes.find(c => c.id === activeClassId);
@@ -34,7 +47,7 @@ export default function Navbar({ activeClassId, setActiveClassId }) {
               : 'bg-primary-container text-on-primary-container border-primary/20'
           }`}>
             <span className={`w-1.5 h-1.5 rounded-full ${isSupabase ? 'bg-secondary animate-pulse' : 'bg-primary'}`}></span>
-            {isSupabase ? ' Live' : 'Demo Local Mode'}
+            {isSupabase ? 'Supabase Live' : 'Demo Local Mode'}
           </span>
 
           {/* Classroom Group Dropdown for Teacher */}
@@ -72,6 +85,23 @@ export default function Navbar({ activeClassId, setActiveClassId }) {
 
         {/* Right Navigation & Profile Controls */}
         <div className="flex items-center gap-4">
+          
+          {/* AI Settings Indicator Button */}
+          <button 
+            onClick={openAIModal}
+            className={`p-2 rounded-full transition-colors relative flex items-center justify-center ${
+              geminiKey 
+                ? 'text-rust hover:bg-rust/10' 
+                : 'text-on-surface-variant hover:bg-surface-container-high'
+            }`}
+            title="Configure Gemini Assistant"
+          >
+            <span className="material-symbols-outlined">smart_toy</span>
+            {geminiKey && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-secondary border border-white rounded-full"></span>
+            )}
+          </button>
+
           {currentUser ? (
             <div className="flex items-center gap-2">
               {/* Role Indicator Badge */}
@@ -105,6 +135,59 @@ export default function Navbar({ activeClassId, setActiveClassId }) {
         </div>
 
       </div>
+
+      {/* Gemini Settings Modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="font-headline text-lg font-bold text-chocolate mb-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-rust">smart_toy</span>
+              Configure Google Gemini Assistant
+            </h3>
+            <p className="text-xs text-on-surface-variant mb-4 leading-relaxed">
+              Save your Gemini API Key locally to unlock AI features (AI Assignment draft generator, AI grading suggestions, and student study companions).
+            </p>
+            
+            <form onSubmit={handleSaveKey} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-chocolate flex justify-between" htmlFor="aiKey">
+                  <span>Google Gemini API Key</span>
+                  {geminiKey && <span className="text-[10px] text-secondary font-bold">Key is active</span>}
+                </label>
+                <input 
+                  type="password" 
+                  id="aiKey"
+                  value={tempKey}
+                  onChange={(e) => setTempKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full px-3 py-2 bg-white border border-outline/35 rounded-lg text-sm input-focus-ring"
+                />
+              </div>
+
+              <div className="text-[10px] text-outline font-semibold leading-relaxed border-t border-outline-variant/30 pt-3">
+                Note: Your API Key is saved directly in your browser's local storage and is only used to query the Gemini client locally. It is never uploaded to any server.
+              </div>
+
+              <div className="flex gap-3 justify-end pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowAIModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-container rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold bg-rust hover:bg-primary text-white rounded-lg shadow-sm"
+                >
+                  Save API Key
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </header>
   );
 }
