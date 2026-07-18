@@ -86,118 +86,89 @@ export default function Navbar({ activeClassId, setActiveClassId }) {
         {/* Right Navigation & Profile Controls */}
         <div className="flex items-center gap-4">
           
-          {/* AI Settings Indicator Button */}
-          <button 
-            onClick={openAIModal}
-            className={`p-2 rounded-full transition-colors relative flex items-center justify-center ${
-              geminiKey 
-                ? 'text-rust hover:bg-rust/10' 
-                : 'text-on-surface-variant hover:bg-surface-container-high'
-            }`}
-            title="Configure Gemini Assistant"
-          >
-            <span className="material-symbols-outlined">smart_toy</span>
-            {geminiKey && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-secondary border border-white rounded-full"></span>
-            )}
-          </button>
-
-          {currentUser ? (
-            <div className="flex items-center gap-2">
-              {/* Role Indicator Badge */}
-              <span className="hidden md:inline-block text-xs uppercase tracking-wider text-outline px-2 py-1 bg-surface-container rounded font-semibold">
-                {currentUser.role}
-              </span>
-
-              {/* Profile Greeting */}
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-on-surface leading-tight">{currentUser.full_name}</p>
-                <p className="text-xs text-on-surface-variant">{currentUser.email}</p>
+          {showAIModal ? (
+            /* Inline Gemini API Key Setup */
+            <form onSubmit={handleSaveKey} className="flex items-center gap-2 animate-in slide-in-from-right duration-200">
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-rust text-xs">key</span>
+                <input 
+                  type="password"
+                  id="aiKey"
+                  value={tempKey}
+                  onChange={(e) => setTempKey(e.target.value)}
+                  placeholder="Gemini API Key..."
+                  className="pl-7 pr-3 py-1 bg-white border border-[#453724] rounded-lg text-xs w-36 sm:w-48 outline-none focus:ring-1 focus:ring-primary font-medium h-8"
+                />
               </div>
-
-              {/* Logout Button */}
               <button 
-                onClick={handleLogout}
-                className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full"
-                title="Sign Out"
+                type="submit"
+                className="p-1.5 bg-rust text-white rounded-lg flex items-center justify-center border border-[#453724] hover:bg-primary transition-colors active:scale-95 h-8 w-8"
+                title="Save Key"
               >
-                <span className="material-symbols-outlined">logout</span>
+                <span className="material-symbols-outlined text-sm">check</span>
               </button>
-            </div>
+              <button 
+                type="button" 
+                onClick={() => setShowAIModal(false)}
+                className="p-1.5 bg-transparent text-chocolate hover:bg-[#453724]/5 rounded-lg flex items-center justify-center transition-colors h-8 w-8"
+                title="Cancel"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </form>
           ) : (
-            <button 
-              onClick={() => navigate('/login')}
-              className="px-4 py-2 text-label-md font-bold text-rust hover:underline transition-all"
-            >
-              Sign In
-            </button>
+            <>
+              {/* AI Settings Indicator Button */}
+              <button 
+                onClick={openAIModal}
+                className={`p-2 rounded-full transition-colors relative flex items-center justify-center ${
+                  geminiKey 
+                    ? 'text-rust hover:bg-rust/10' 
+                    : 'text-on-surface-variant hover:bg-surface-container-high'
+                }`}
+                title="Configure Gemini Assistant"
+              >
+                <span className="material-symbols-outlined">smart_toy</span>
+                {geminiKey && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-secondary border border-white rounded-full"></span>
+                )}
+              </button>
+
+              {currentUser ? (
+                <div className="flex items-center gap-2">
+                  {/* Role Indicator Badge */}
+                  <span className="hidden md:inline-block text-xs uppercase tracking-wider text-outline px-2 py-1 bg-surface-container rounded font-semibold">
+                    {currentUser.role}
+                  </span>
+
+                  {/* Profile Greeting */}
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-bold text-on-surface leading-tight">{currentUser.full_name}</p>
+                    <p className="text-xs text-on-surface-variant">{currentUser.email}</p>
+                  </div>
+
+                  {/* Logout Button */}
+                  <button 
+                    onClick={handleLogout}
+                    className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full"
+                    title="Sign Out"
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="px-4 py-2 text-label-md font-bold text-rust hover:underline transition-all"
+                >
+                  Sign In
+                </button>
+              )}
+            </>
           )}
         </div>
 
       </div>
-
-      {/* Gemini Settings Modal */}
-      {showAIModal && (
-        <div className="fixed inset-0 bg-[#453724]/40 backdrop-blur-sm z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#FAF9F5] border-2 border-[#453724] rounded-2xl p-6 w-full max-w-md shadow-[6px_6px_0px_0px_#453724] animate-in fade-in zoom-in-95 duration-200 relative my-4 md:my-auto">
-            
-            {/* Close Button */}
-            <button 
-              onClick={() => setShowAIModal(false)}
-              className="absolute top-4 right-4 text-[#453724] hover:bg-[#453724]/10 p-1.5 rounded-full transition-colors flex items-center justify-center"
-              title="Close Dialog"
-            >
-              <span className="material-symbols-outlined text-lg">close</span>
-            </button>
-
-            <h3 className="font-headline text-lg font-bold text-chocolate mb-2 flex items-center gap-2 pr-8">
-              <span className="material-symbols-outlined text-rust">smart_toy</span>
-              Configure Gemini Assistant
-            </h3>
-            <p className="text-xs text-on-surface-variant mb-4 leading-relaxed font-medium">
-              Save your Gemini API Key locally to unlock AI features (AI Assignment draft generator, AI grading suggestions, and student study companions).
-            </p>
-            
-            <form onSubmit={handleSaveKey} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-chocolate flex justify-between" htmlFor="aiKey">
-                  <span>Google Gemini API Key</span>
-                  {geminiKey && <span className="text-[10px] text-secondary font-bold">Key is active</span>}
-                </label>
-                <input 
-                  type="password" 
-                  id="aiKey"
-                  value={tempKey}
-                  onChange={(e) => setTempKey(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full px-3 py-2 bg-white border border-[#453724] rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
-                />
-              </div>
-
-              <div className="text-[10px] text-outline font-semibold leading-relaxed border-t border-[#453724]/10 pt-3">
-                Note: Your API Key is saved directly in your browser's local storage and is only used to query the Gemini client locally. It is never uploaded to any server.
-              </div>
-
-              <div className="flex gap-3 justify-end pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setShowAIModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-chocolate hover:bg-[#453724]/5 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="px-5 py-2.5 bg-rust border-2 border-[#453724] text-white hover:bg-primary rounded-xl font-bold text-xs shadow-sm transition-colors active:scale-95 flex items-center gap-1"
-                >
-                  Save API Key
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </header>
   );
 }
